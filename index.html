@@ -65,7 +65,7 @@
 
     .topbar {
       display: grid;
-      grid-template-columns: minmax(280px, 1fr) minmax(360px, 480px);
+      grid-template-columns: minmax(280px, 1fr) minmax(120px, 170px) minmax(360px, 480px);
       gap: 12px;
       align-items: end;
       padding: 6px 0 10px;
@@ -87,6 +87,43 @@
       max-width: 760px;
       line-height: 1.35;
       font-size: 13px;
+    }
+
+    .creator-card {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 8px;
+      align-items: center;
+      align-self: stretch;
+      min-width: 0;
+      padding: 7px;
+      border: 1px solid var(--line-dark);
+      background: #fffaf0;
+      box-shadow: 0 6px 18px rgba(61, 50, 34, 0.09);
+    }
+
+    .creator-card img {
+      width: 56px;
+      height: 56px;
+      display: block;
+      object-fit: cover;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .creator-card strong {
+      display: block;
+      margin-bottom: 2px;
+      font-family: var(--serif);
+      font-size: 15px;
+      line-height: 1.1;
+    }
+
+    .creator-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
     }
 
     .status-strip {
@@ -133,6 +170,33 @@
       min-width: 0;
     }
 
+    .rail {
+      position: sticky;
+      top: 10px;
+      min-height: clamp(520px, calc(100vh - 112px), 780px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .workspace > .panel {
+      min-height: clamp(520px, calc(100vh - 112px), 780px);
+    }
+
+    .rail .panel:last-child {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rail .panel:last-child .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rail .advanced-panel {
+      margin-top: auto;
+    }
+
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -171,21 +235,44 @@
       padding: 10px;
     }
 
+    .source-stack {
+      display: grid;
+      gap: 8px;
+    }
+
     .dropzone {
       position: relative;
       display: grid;
       place-items: center;
-      min-height: 88px;
-      border: 2px dashed #a99b84;
+      min-height: 96px;
+      border: 2px dashed var(--accent);
       border-radius: var(--radius);
-      background: repeating-linear-gradient(-45deg, #fffaf0, #fffaf0 12px, #fbf0dd 12px, #fbf0dd 24px);
+      background:
+        linear-gradient(135deg, rgba(193, 70, 47, 0.18), rgba(47, 111, 94, 0.12)),
+        repeating-linear-gradient(-45deg, #fffaf0, #fffaf0 12px, #fbf0dd 12px, #fbf0dd 24px);
       text-align: center;
-      transition: border-color 0.18s ease, transform 0.18s ease;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 250, 240, 0.76),
+        0 10px 24px rgba(193, 70, 47, 0.16);
+      overflow: hidden;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .dropzone::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(193, 70, 47, 0.24);
+      border-radius: 5px;
+      pointer-events: none;
     }
 
     .dropzone.is-dragover {
-      border-color: var(--accent);
-      transform: translateY(-1px);
+      border-color: var(--accent-dark);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 250, 240, 0.88),
+        0 14px 32px rgba(193, 70, 47, 0.24);
+      transform: translateY(-2px);
     }
 
     .dropzone input {
@@ -196,32 +283,35 @@
     }
 
     .drop-content {
-      padding: 10px;
+      position: relative;
+      z-index: 1;
+      padding: 14px 12px;
       pointer-events: none;
     }
 
     .drop-icon {
-      width: 34px;
-      height: 34px;
-      margin: 0 auto 6px;
+      width: 38px;
+      height: 38px;
+      margin: 0 auto 7px;
       display: grid;
       place-items: center;
-      background: var(--ink);
+      background: var(--accent);
       color: #fffaf0;
       border-radius: 50%;
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
+      box-shadow: 0 8px 18px rgba(193, 70, 47, 0.28);
     }
 
     .drop-content strong {
       display: block;
-      font-size: 14px;
-      margin-bottom: 2px;
+      font-size: 17px;
+      margin-bottom: 4px;
     }
 
     .drop-content span {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1.35;
     }
 
@@ -262,9 +352,20 @@
       white-space: nowrap;
     }
 
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .quick-grid .mode-field:not(.hidden) {
+      grid-column: 1 / -1;
+    }
+
     .range-card {
       display: grid;
-      gap: 10px;
+      gap: 8px;
     }
 
     .range-summary {
@@ -439,6 +540,72 @@
       gap: 8px;
     }
 
+    .advanced-panel {
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fffaf0;
+      overflow: hidden;
+    }
+
+    .advanced-panel summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 7px 9px;
+      color: var(--ink);
+      background: #f7ecdb;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .advanced-panel summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .advanced-panel summary::after {
+      content: "+";
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fffaf0;
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .advanced-panel[open] summary::after {
+      content: "-";
+    }
+
+    .advanced-body {
+      display: grid;
+      gap: 9px;
+      padding: 9px;
+      border-top: 1px solid var(--line);
+    }
+
+    .advanced-body h3 {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .advanced-section {
+      display: grid;
+      gap: 8px;
+    }
+
     .field {
       display: grid;
       gap: 4px;
@@ -508,7 +675,7 @@
     }
 
     .export-actions {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       margin: 0 0 10px;
     }
 
@@ -756,6 +923,107 @@
       cursor: pointer;
     }
 
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    .mosaic-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      padding: 18px;
+    }
+
+    .mosaic-modal.show {
+      display: grid;
+      place-items: center;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(31, 29, 25, 0.72);
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-sheet {
+      position: relative;
+      z-index: 1;
+      width: min(96vw, 1480px);
+      height: min(92vh, 980px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+      border: 1px solid rgba(255, 250, 240, 0.35);
+      border-radius: var(--radius);
+      background: #171411;
+      box-shadow: 0 26px 90px rgba(0, 0, 0, 0.46);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 10px;
+      color: #fffaf0;
+      border-bottom: 1px solid rgba(255, 250, 240, 0.16);
+      background: #24211d;
+    }
+
+    .modal-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .zoom-label {
+      min-width: 48px;
+      color: rgba(255, 250, 240, 0.78);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    .modal-head span {
+      color: rgba(255, 250, 240, 0.68);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .modal-view {
+      min-height: 0;
+      min-width: 0;
+      padding: 14px;
+      overflow: auto;
+      background:
+        linear-gradient(45deg, rgba(255, 250, 240, 0.08) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255, 250, 240, 0.08) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255, 250, 240, 0.08) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255, 250, 240, 0.08) 75%),
+        #171411;
+      background-size: 28px 28px;
+      background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+    }
+
+    .modal-view img {
+      display: block;
+      margin: auto;
+      max-width: none;
+      max-height: none;
+      background: white;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+    }
+
     .toast {
       position: fixed;
       left: 50%;
@@ -792,6 +1060,21 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .rail {
+        position: static;
+        min-height: 0;
+        display: block;
+      }
+
+      .rail .panel:last-child,
+      .rail .panel:last-child .panel-body {
+        display: block;
+      }
+
+      .workspace > .panel {
+        min-height: 0;
+      }
+
       .mosaic-stage,
       .frames-panel {
         height: auto;
@@ -813,12 +1096,23 @@
         grid-template-columns: 1fr;
       }
 
+      .creator-card {
+        grid-template-columns: 64px 1fr;
+      }
+
+      .creator-card img {
+        width: 64px;
+        height: 64px;
+      }
+
       .status-strip,
       .field-row,
+      .quick-grid,
       .checks,
       .actions,
       .clip-actions,
-      .tools-row {
+      .tools-row,
+      .export-actions {
         grid-template-columns: 1fr;
       }
 
@@ -830,6 +1124,10 @@
       .frames-panel {
         min-height: 320px;
       }
+
+      .mosaic-modal {
+        padding: 10px;
+      }
     }
   </style>
 </head>
@@ -840,6 +1138,13 @@
         <h1>视频截帧拼图工作台</h1>
         <p>导入视频后按张数、秒数间隔或手动定位截帧，右侧自动生成宫格拼图和单图列表。</p>
       </div>
+      <aside class="creator-card" aria-label="小阳哥出品">
+        <img src="assets/xiaoyang-qr.png" alt="小阳哥出品二维码">
+        <div>
+          <strong>小阳哥出品</strong>
+          <span>扫码关注，获取更多工具更新。</span>
+        </div>
+      </aside>
       <div class="status-strip" aria-live="polite">
         <div class="status-item"><span>视频时长</span><strong id="durationText">--:--</strong></div>
         <div class="status-item"><span>截帧数量</span><strong id="frameCountText">0</strong></div>
@@ -851,77 +1156,25 @@
       <aside class="rail">
         <section class="panel">
           <div class="panel-head">
-            <h2>1. 导入视频</h2>
-            <span class="hint">文件只在本机读取</span>
-          </div>
-          <div class="panel-body">
-            <label class="dropzone" id="dropzone">
-              <input id="fileInput" type="file" accept="video/*">
-              <span class="drop-content">
-                <span class="drop-icon">+</span>
-                <strong>选择或拖入视频</strong>
-                <span id="fileName">支持浏览器可播放的视频格式，如 MP4、MOV、WEBM。</span>
-              </span>
-            </label>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <h2>2. 视频预览</h2>
+            <h2>视频源</h2>
             <span class="hint" id="resolutionText">未载入</span>
           </div>
           <div class="panel-body">
-            <div class="video-shell">
-              <video id="video" controls playsinline muted></video>
-            </div>
-            <div class="scrub-row">
-              <input id="seekRange" type="range" min="0" max="0" step="0.01" value="0">
-              <span class="time-pill" id="currentTimeText">00:00.00</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <h2>3. 选取片段</h2>
-            <span class="hint" id="clipStatusText">全片</span>
-          </div>
-          <div class="panel-body">
-            <div class="range-card">
-              <div class="range-summary">
-                <div>
-                  <strong id="clipRangeText">00:00.00 - 00:00.00</strong>
-                  <span id="clipDurationText">片段时长 00:00.00</span>
-                </div>
-                <label class="switch">
-                  <input id="clipEnabled" type="checkbox">
-                  <span class="switch-track" aria-hidden="true"></span>
-                  只截片段
-                </label>
+            <div class="source-stack">
+              <label class="dropzone" id="dropzone">
+                <input id="fileInput" type="file" accept="video/*">
+                <span class="drop-content">
+                  <span class="drop-icon">+</span>
+                  <strong>选择或拖入视频</strong>
+                  <span id="fileName">文件只在本机读取，支持 MP4、MOV、WEBM。</span>
+                </span>
+              </label>
+              <div class="video-shell">
+                <video id="video" controls playsinline muted></video>
               </div>
-
-              <div class="clip-slider" aria-label="视频片段范围">
-                <div class="clip-track"><div class="clip-fill" id="clipFill"></div></div>
-                <input id="clipStartRange" type="range" min="0" max="0" step="0.01" value="0" aria-label="片段开始时间">
-                <input id="clipEndRange" type="range" min="0" max="0" step="0.01" value="0" aria-label="片段结束时间">
-              </div>
-
-              <div class="field-row">
-                <div class="field">
-                  <label for="clipStart">开始秒数</label>
-                  <input class="input" id="clipStart" type="number" min="0" step="0.01" value="0">
-                </div>
-                <div class="field">
-                  <label for="clipEnd">结束秒数</label>
-                  <input class="input" id="clipEnd" type="number" min="0" step="0.01" value="0">
-                </div>
-              </div>
-
-              <div class="clip-actions">
-                <button class="mini-btn" id="setClipStartBtn" type="button" disabled>设为开始</button>
-                <button class="mini-btn" id="setClipEndBtn" type="button" disabled>设为结束</button>
-                <button class="mini-btn" id="resetClipBtn" type="button" disabled>恢复全片</button>
+              <div class="scrub-row">
+                <input id="seekRange" type="range" min="0" max="0" step="0.01" value="0">
+                <span class="time-pill" id="currentTimeText">00:00.00</span>
               </div>
             </div>
           </div>
@@ -929,7 +1182,7 @@
 
         <section class="panel">
           <div class="panel-head">
-            <h2>4. 切图方式</h2>
+            <h2>截帧设置</h2>
             <span class="hint" id="modeHint">按张数</span>
           </div>
           <div class="panel-body">
@@ -939,7 +1192,7 @@
               <button class="segment" data-mode="manual" type="button">手动切帧</button>
             </div>
 
-            <div class="form-grid">
+            <div class="quick-grid">
               <div class="field mode-field" data-mode-field="count">
                 <label for="targetCount">截帧张数</label>
                 <input class="input" id="targetCount" type="number" min="1" max="999" value="9">
@@ -954,31 +1207,6 @@
                 <label for="manualSecond">手动截帧秒数</label>
                 <input class="input" id="manualSecond" type="number" min="0" step="0.01" value="0">
               </div>
-
-              <div class="field-row">
-                <div class="field">
-                  <label for="captureWidth">单图宽度</label>
-                  <select id="captureWidth">
-                    <option value="source">原视频宽度</option>
-                    <option value="1920">1920 px</option>
-                    <option value="1280">1280 px</option>
-                    <option value="960">960 px</option>
-                    <option value="640">640 px</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="imageFormat">图片格式</label>
-                  <select id="imageFormat">
-                    <option value="image/png">PNG</option>
-                    <option value="image/jpeg">JPG</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="checks">
-                <label class="check"><input id="skipEdges" type="checkbox" checked> 避开首尾黑场</label>
-                <label class="check"><input id="clearBefore" type="checkbox" checked> 截帧前清空旧图</label>
-              </div>
             </div>
 
             <div class="actions">
@@ -988,6 +1216,79 @@
               <button class="btn dark" id="sortBtn" type="button" disabled>按时间排序</button>
             </div>
             <div class="progress-wrap" id="progressWrap"><div class="progress" id="progress"></div></div>
+
+            <details class="advanced-panel">
+              <summary>片段与输出选项 <span id="clipStatusText">全片</span></summary>
+              <div class="advanced-body">
+                <div class="advanced-section">
+                  <h3>截取片段</h3>
+                  <div class="range-card">
+                    <div class="range-summary">
+                      <div>
+                        <strong id="clipRangeText">00:00.00 - 00:00.00</strong>
+                        <span id="clipDurationText">片段时长 00:00.00</span>
+                      </div>
+                      <label class="switch">
+                        <input id="clipEnabled" type="checkbox">
+                        <span class="switch-track" aria-hidden="true"></span>
+                        只截片段
+                      </label>
+                    </div>
+
+                    <div class="clip-slider" aria-label="视频片段范围">
+                      <div class="clip-track"><div class="clip-fill" id="clipFill"></div></div>
+                      <input id="clipStartRange" type="range" min="0" max="0" step="0.01" value="0" aria-label="片段开始时间">
+                      <input id="clipEndRange" type="range" min="0" max="0" step="0.01" value="0" aria-label="片段结束时间">
+                    </div>
+
+                    <div class="field-row">
+                      <div class="field">
+                        <label for="clipStart">开始秒数</label>
+                        <input class="input" id="clipStart" type="number" min="0" step="0.01" value="0">
+                      </div>
+                      <div class="field">
+                        <label for="clipEnd">结束秒数</label>
+                        <input class="input" id="clipEnd" type="number" min="0" step="0.01" value="0">
+                      </div>
+                    </div>
+
+                    <div class="clip-actions">
+                      <button class="mini-btn" id="setClipStartBtn" type="button" disabled>设为开始</button>
+                      <button class="mini-btn" id="setClipEndBtn" type="button" disabled>设为结束</button>
+                      <button class="mini-btn" id="resetClipBtn" type="button" disabled>恢复全片</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="advanced-section">
+                  <h3>输出</h3>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="captureWidth">单图宽度</label>
+                      <select id="captureWidth">
+                        <option value="source">原视频宽度</option>
+                        <option value="1920">1920 px</option>
+                        <option value="1280">1280 px</option>
+                        <option value="960">960 px</option>
+                        <option value="640">640 px</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="imageFormat">图片格式</label>
+                      <select id="imageFormat">
+                        <option value="image/png">PNG</option>
+                        <option value="image/jpeg">JPG</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="checks">
+                    <label class="check"><input id="skipEdges" type="checkbox" checked> 避开首尾黑场</label>
+                    <label class="check"><input id="clearBefore" type="checkbox" checked> 截帧前清空旧图</label>
+                  </div>
+                </div>
+              </div>
+            </details>
           </div>
         </section>
       </aside>
@@ -1043,6 +1344,7 @@
 
             <div class="actions export-actions">
               <button class="btn green" id="downloadMosaicBtn" type="button" disabled>导出拼图</button>
+              <button class="btn dark" id="openMosaicBtn" type="button" disabled>全览</button>
               <button class="btn" id="downloadFramesBtn" type="button" disabled>导出单图</button>
               <button class="btn" id="copyMosaicBtn" type="button" disabled>复制拼图</button>
               <button class="btn" id="refreshMosaicBtn" type="button" disabled>刷新</button>
@@ -1072,6 +1374,29 @@
       </section>
     </section>
   </main>
+
+  <div class="mosaic-modal" id="mosaicModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="mosaicModalTitle">
+    <div class="modal-backdrop" id="mosaicModalBackdrop"></div>
+    <section class="modal-sheet">
+      <div class="modal-head">
+        <div>
+          <h2 id="mosaicModalTitle">拼图全览</h2>
+          <span id="mosaicModalInfo">等待截帧</span>
+        </div>
+        <div class="modal-toolbar">
+          <button class="mini-btn" id="mosaicZoomOutBtn" type="button">缩小</button>
+          <span class="zoom-label" id="mosaicZoomText">适合</span>
+          <button class="mini-btn" id="mosaicZoomInBtn" type="button">放大</button>
+          <button class="mini-btn" id="mosaicFitBtn" type="button">适合窗口</button>
+          <button class="mini-btn" id="modalDownloadMosaicBtn" type="button">下载拼图</button>
+          <button class="mini-btn" id="closeMosaicModalBtn" type="button">关闭</button>
+        </div>
+      </div>
+      <div class="modal-view" id="mosaicModalView">
+        <img id="mosaicModalImage" alt="完整拼图预览">
+      </div>
+    </section>
+  </div>
 
   <canvas id="captureCanvas" class="hidden"></canvas>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1121,6 +1446,7 @@
       bgColor: document.getElementById('bgColor'),
       captionMode: document.getElementById('captionMode'),
       downloadMosaicBtn: document.getElementById('downloadMosaicBtn'),
+      openMosaicBtn: document.getElementById('openMosaicBtn'),
       downloadFramesBtn: document.getElementById('downloadFramesBtn'),
       copyMosaicBtn: document.getElementById('copyMosaicBtn'),
       refreshMosaicBtn: document.getElementById('refreshMosaicBtn'),
@@ -1130,6 +1456,17 @@
       emptyMosaic: document.getElementById('emptyMosaic'),
       captureCanvas: document.getElementById('captureCanvas'),
       mosaicInfo: document.getElementById('mosaicInfo'),
+      mosaicModal: document.getElementById('mosaicModal'),
+      mosaicModalBackdrop: document.getElementById('mosaicModalBackdrop'),
+      mosaicModalView: document.getElementById('mosaicModalView'),
+      mosaicModalImage: document.getElementById('mosaicModalImage'),
+      mosaicModalInfo: document.getElementById('mosaicModalInfo'),
+      mosaicZoomOutBtn: document.getElementById('mosaicZoomOutBtn'),
+      mosaicZoomInBtn: document.getElementById('mosaicZoomInBtn'),
+      mosaicFitBtn: document.getElementById('mosaicFitBtn'),
+      mosaicZoomText: document.getElementById('mosaicZoomText'),
+      modalDownloadMosaicBtn: document.getElementById('modalDownloadMosaicBtn'),
+      closeMosaicModalBtn: document.getElementById('closeMosaicModalBtn'),
       toast: document.getElementById('toast')
     };
 
@@ -1139,6 +1476,8 @@
     let isCapturing = false;
     let draggedFrameId = '';
     let toastTimer = 0;
+    let mosaicZoom = 1;
+    let mosaicFitScale = 1;
 
     function showToast(message) {
       clearTimeout(toastTimer);
@@ -1182,6 +1521,7 @@
       el.sortBtn.disabled = !hasFrames || isCapturing;
       el.sortFramesBtn.disabled = !hasFrames || isCapturing;
       el.downloadMosaicBtn.disabled = !hasFrames || isCapturing;
+      el.openMosaicBtn.disabled = !hasFrames || isCapturing;
       el.downloadFramesBtn.disabled = !hasFrames || isCapturing;
       el.copyMosaicBtn.disabled = !hasFrames || isCapturing || !navigator.clipboard || !window.ClipboardItem;
       el.refreshMosaicBtn.disabled = !hasFrames || isCapturing;
@@ -1541,6 +1881,7 @@
         canvas.classList.add('hidden');
         el.emptyMosaic.classList.remove('hidden');
         el.mosaicInfo.textContent = '等待截帧';
+        el.mosaicModalImage.removeAttribute('src');
         return;
       }
 
@@ -1582,6 +1923,61 @@
       el.emptyMosaic.classList.add('hidden');
       el.mosaicInfo.textContent = `${chosen.length} 张，${columns} x ${rows}，${canvas.width} x ${canvas.height}px`;
       el.gridStatusText.textContent = el.gridPreset.value === 'all' ? '全部图片' : `${el.gridPreset.value} 宫格`;
+    }
+
+    async function openMosaicOverview() {
+      if (!frames.length) return;
+      await renderMosaic();
+      el.mosaicModalImage.src = el.mosaicCanvas.toDataURL('image/png');
+      el.mosaicModalInfo.textContent = el.mosaicInfo.textContent;
+      el.mosaicModal.classList.add('show');
+      el.mosaicModal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
+      requestAnimationFrame(() => resetMosaicZoom());
+      el.closeMosaicModalBtn.focus();
+    }
+
+    function closeMosaicOverview() {
+      el.mosaicModal.classList.remove('show');
+      el.mosaicModal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+    }
+
+    function updateMosaicZoom() {
+      const width = el.mosaicCanvas.width || 1;
+      const height = el.mosaicCanvas.height || 1;
+      const displayScale = mosaicFitScale * mosaicZoom;
+      el.mosaicModalImage.style.width = `${Math.max(1, Math.round(width * displayScale))}px`;
+      el.mosaicModalImage.style.height = `${Math.max(1, Math.round(height * displayScale))}px`;
+      el.mosaicZoomText.textContent = mosaicZoom === 1 ? '适合' : `${Math.round(mosaicZoom * 100)}%`;
+      el.mosaicZoomOutBtn.disabled = mosaicZoom <= 0.5;
+      el.mosaicZoomInBtn.disabled = mosaicZoom >= 6;
+    }
+
+    function resetMosaicZoom() {
+      const viewW = Math.max(1, el.mosaicModalView.clientWidth - 28);
+      const viewH = Math.max(1, el.mosaicModalView.clientHeight - 28);
+      const canvasW = Math.max(1, el.mosaicCanvas.width);
+      const canvasH = Math.max(1, el.mosaicCanvas.height);
+      mosaicFitScale = Math.min(viewW / canvasW, viewH / canvasH, 1);
+      mosaicZoom = 1;
+      updateMosaicZoom();
+      el.mosaicModalView.scrollLeft = 0;
+      el.mosaicModalView.scrollTop = 0;
+    }
+
+    function changeMosaicZoom(delta) {
+      const view = el.mosaicModalView;
+      const centerX = view.scrollLeft + view.clientWidth / 2;
+      const centerY = view.scrollTop + view.clientHeight / 2;
+      const currentW = el.mosaicModalImage.offsetWidth || 1;
+      const currentH = el.mosaicModalImage.offsetHeight || 1;
+      const ratioX = centerX / currentW;
+      const ratioY = centerY / currentH;
+      mosaicZoom = Math.max(0.5, Math.min(6, Number((mosaicZoom + delta).toFixed(2))));
+      updateMosaicZoom();
+      view.scrollLeft = el.mosaicModalImage.offsetWidth * ratioX - view.clientWidth / 2;
+      view.scrollTop = el.mosaicModalImage.offsetHeight * ratioY - view.clientHeight / 2;
     }
 
     function downloadBlob(blob, filename) {
@@ -1769,9 +2165,32 @@
     });
 
     el.downloadMosaicBtn.addEventListener('click', downloadMosaic);
+    el.openMosaicBtn.addEventListener('click', () => openMosaicOverview().catch(() => showToast('无法打开全览')));
     el.downloadFramesBtn.addEventListener('click', downloadFrames);
     el.copyMosaicBtn.addEventListener('click', () => copyMosaic().catch(() => showToast('复制失败，浏览器可能不支持')));
     el.refreshMosaicBtn.addEventListener('click', renderMosaic);
+    el.closeMosaicModalBtn.addEventListener('click', closeMosaicOverview);
+    el.mosaicModalBackdrop.addEventListener('click', closeMosaicOverview);
+    el.mosaicZoomOutBtn.addEventListener('click', () => changeMosaicZoom(-0.25));
+    el.mosaicZoomInBtn.addEventListener('click', () => changeMosaicZoom(0.25));
+    el.mosaicFitBtn.addEventListener('click', resetMosaicZoom);
+    el.modalDownloadMosaicBtn.addEventListener('click', downloadMosaic);
+
+    el.mosaicModalView.addEventListener('wheel', (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      changeMosaicZoom(event.deltaY > 0 ? -0.25 : 0.25);
+    }, { passive: false });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && el.mosaicModal.classList.contains('show')) {
+        closeMosaicOverview();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (el.mosaicModal.classList.contains('show')) resetMosaicZoom();
+    });
 
     window.addEventListener('beforeunload', () => {
       if (videoUrl) URL.revokeObjectURL(videoUrl);

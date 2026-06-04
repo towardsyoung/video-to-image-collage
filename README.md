@@ -2,6 +2,22 @@
 
 一个纯前端的本地视频截帧工具。直接在浏览器中导入视频，按张数、时间间隔或指定秒数截取画面，并自动生成宫格拼图与单张图片列表。
 
+## 小阳哥出品
+
+扫码关注，获取更多工具更新。
+
+![小阳哥出品二维码](assets/xiaoyang-qr.png)
+
+## 功能演示
+
+### 截帧工作台
+
+![截帧工作台功能演示](assets/screenshot1.png)
+
+### 拼图全览
+
+![拼图全览功能演示](assets/screenshot2.png)
+
 ## 功能特性
 
 - 本地读取视频文件，视频不会上传到服务器。
@@ -72,6 +88,10 @@ http://localhost:8080
 
 ```text
 .
+├── assets/
+│   ├── xiaoyang-qr.png  # 小阳哥出品二维码
+│   ├── screenshot1.png  # 截帧工作台功能演示
+│   └── screenshot2.png  # 拼图全览功能演示
 ├── index.html       # 单文件前端应用
 ├── README.md        # 项目说明
 ├── LICENSE          # 开源许可证
