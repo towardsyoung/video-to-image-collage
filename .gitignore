@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 日志
+*.log
+
+# 临时文件
+tmp/
+temp/
+
+# 本地测试产物
+dist/
+build/
+coverage/
+
+# 大体积媒体文件
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi

@@ -1,0 +1,1786 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>本地视频截帧拼图工作台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f3ee;
+      --panel: #fffdf8;
+      --panel-strong: #24211d;
+      --ink: #1f1d19;
+      --muted: #746f66;
+      --line: #d9d1c3;
+      --line-dark: #3b352e;
+      --accent: #c1462f;
+      --accent-dark: #962f20;
+      --green: #2f6f5e;
+      --green-soft: #dcebe5;
+      --blue: #345c7d;
+      --shadow: 0 10px 28px rgba(61, 50, 34, 0.1);
+      --radius: 7px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --serif: Georgia, "Songti SC", SimSun, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(31, 29, 25, 0.04) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(rgba(31, 29, 25, 0.035) 1px, transparent 1px) 0 0 / 28px 28px,
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .app {
+      width: min(1680px, calc(100vw - 20px));
+      margin: 0 auto;
+      padding: 10px 0 16px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(360px, 480px);
+      gap: 12px;
+      align-items: end;
+      padding: 6px 0 10px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(26px, 3.2vw, 44px);
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .title-block p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.35;
+      font-size: 13px;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(86px, 1fr));
+      border: 1px solid var(--line-dark);
+      background: var(--panel-strong);
+      color: #fffaf0;
+      min-width: 0;
+    }
+
+    .status-item {
+      padding: 8px 10px;
+      border-left: 1px solid rgba(255, 250, 240, 0.2);
+    }
+
+    .status-item:first-child {
+      border-left: 0;
+    }
+
+    .status-item span {
+      display: block;
+      color: rgba(255, 250, 240, 0.68);
+      font-size: 11px;
+      margin-bottom: 3px;
+    }
+
+    .status-item strong {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 350px) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      align-items: start;
+    }
+
+    .rail,
+    .workspace {
+      min-width: 0;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel + .panel {
+      margin-top: 10px;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      background: #fdf7ed;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    .panel-head .hint {
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .panel-body {
+      padding: 10px;
+    }
+
+    .dropzone {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 88px;
+      border: 2px dashed #a99b84;
+      border-radius: var(--radius);
+      background: repeating-linear-gradient(-45deg, #fffaf0, #fffaf0 12px, #fbf0dd 12px, #fbf0dd 24px);
+      text-align: center;
+      transition: border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .dropzone.is-dragover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .dropzone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-content {
+      padding: 10px;
+      pointer-events: none;
+    }
+
+    .drop-icon {
+      width: 34px;
+      height: 34px;
+      margin: 0 auto 6px;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: #fffaf0;
+      border-radius: 50%;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .drop-content strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .drop-content span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .video-shell {
+      background: #111;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid #111;
+    }
+
+    video {
+      width: 100%;
+      display: block;
+      aspect-ratio: 16 / 9;
+      background: #101010;
+    }
+
+    .scrub-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .time-pill {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #fffaf0;
+      background: var(--ink);
+      border-radius: 999px;
+      padding: 5px 7px;
+      white-space: nowrap;
+    }
+
+    .range-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .range-summary {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fffaf0;
+    }
+
+    .range-summary strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .range-summary span {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      width: 38px;
+      height: 22px;
+      border-radius: 999px;
+      background: #d8cbbb;
+      border: 1px solid #c4b5a3;
+      transition: background 0.16s ease, border-color 0.16s ease;
+    }
+
+    .switch-track::after {
+      content: "";
+      display: block;
+      width: 16px;
+      height: 16px;
+      margin: 2px;
+      border-radius: 50%;
+      background: #fffaf0;
+      box-shadow: 0 1px 3px rgba(31, 29, 25, 0.22);
+      transition: transform 0.16s ease;
+    }
+
+    .switch input:checked + .switch-track {
+      background: var(--accent);
+      border-color: var(--accent-dark);
+    }
+
+    .switch input:checked + .switch-track::after {
+      transform: translateX(16px);
+    }
+
+    .clip-slider {
+      position: relative;
+      height: 36px;
+      display: grid;
+      align-items: center;
+    }
+
+    .clip-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 8px;
+      border-radius: 999px;
+      background: #e2d5c3;
+      overflow: hidden;
+    }
+
+    .clip-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+    }
+
+    .clip-slider input[type="range"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      margin: 0;
+      background: transparent;
+      pointer-events: none;
+      appearance: none;
+    }
+
+    .clip-slider input[type="range"]::-webkit-slider-thumb {
+      pointer-events: auto;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #fffaf0;
+      background: var(--ink);
+      box-shadow: 0 2px 8px rgba(31, 29, 25, 0.25);
+    }
+
+    .clip-slider input[type="range"]::-moz-range-thumb {
+      pointer-events: auto;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #fffaf0;
+      background: var(--ink);
+      box-shadow: 0 2px 8px rgba(31, 29, 25, 0.25);
+    }
+
+    .clip-slider input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      background: transparent;
+    }
+
+    .clip-slider input[type="range"]::-moz-range-track {
+      height: 8px;
+      background: transparent;
+    }
+
+    .clip-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      background: #e7dece;
+      padding: 4px;
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+    }
+
+    .segment {
+      border-radius: 6px;
+      padding: 6px 6px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      min-height: 32px;
+    }
+
+    .segment.active {
+      background: var(--panel-strong);
+      color: #fffaf0;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .input,
+    select {
+      width: 100%;
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fffaf0;
+      color: var(--ink);
+      padding: 6px 8px;
+      outline: none;
+    }
+
+    .input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(193, 70, 47, 0.12);
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 6px 7px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fffaf0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .check input {
+      accent-color: var(--accent);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .export-actions {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 0 0 10px;
+    }
+
+    .btn {
+      min-height: 34px;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: var(--ink);
+      background: #ece2d2;
+      border: 1px solid #d0c4b2;
+      transition: transform 0.14s ease, background 0.14s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: #e3d3bd;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #fffaf0;
+      border-color: var(--accent-dark);
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: var(--accent-dark);
+    }
+
+    .btn.dark {
+      background: var(--ink);
+      color: #fffaf0;
+      border-color: var(--ink);
+    }
+
+    .btn.green {
+      background: var(--green);
+      color: #fffaf0;
+      border-color: #255c4e;
+    }
+
+    .btn.icon {
+      min-width: 34px;
+      padding: 6px;
+    }
+
+    .progress-wrap {
+      display: none;
+      margin-top: 8px;
+      background: #ebe1d2;
+      border-radius: 999px;
+      overflow: hidden;
+      height: 8px;
+    }
+
+    .progress-wrap.show {
+      display: block;
+    }
+
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      transition: width 0.18s ease;
+    }
+
+    .tools-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(86px, 1fr));
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 10px;
+    }
+
+    .preview-wrap {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(235px, 300px);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .mosaic-stage {
+      height: clamp(360px, calc(100vh - 305px), 560px);
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, rgba(31, 29, 25, 0.07) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(31, 29, 25, 0.07) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(31, 29, 25, 0.07) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(31, 29, 25, 0.07) 75%),
+        #fbf6ec;
+      background-size: 24px 24px;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      overflow: auto;
+    }
+
+    #mosaicCanvas {
+      max-width: 100%;
+      height: auto;
+      background: white;
+      box-shadow: 0 16px 40px rgba(31, 29, 25, 0.18);
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+      padding: 26px;
+    }
+
+    .frames-panel {
+      display: flex;
+      flex-direction: column;
+      height: clamp(360px, calc(100vh - 305px), 560px);
+      min-height: 320px;
+      max-height: none;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fffaf0;
+    }
+
+    .frames-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--line);
+      background: #f7ecdb;
+    }
+
+    .frames-toolbar strong {
+      font-size: 13px;
+    }
+
+    .frames-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .mini-btn {
+      min-height: 28px;
+      border-radius: 5px;
+      padding: 4px 7px;
+      background: #eadccc;
+      color: var(--ink);
+      border: 1px solid #d0c4b2;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .mini-btn:hover:not(:disabled) {
+      background: #dfcbb3;
+    }
+
+    .thumbs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      overflow: auto;
+      padding: 8px;
+    }
+
+    .thumb {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #eee;
+      min-height: 108px;
+      cursor: grab;
+      transition: border-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .thumb:active {
+      cursor: grabbing;
+    }
+
+    .thumb.dragging {
+      opacity: 0.45;
+      transform: scale(0.98);
+    }
+
+    .thumb.drag-over {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 2px rgba(193, 70, 47, 0.25);
+    }
+
+    .thumb img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    .thumb-meta {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      background: #fffaf0;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      flex: 0 0 30px;
+      min-height: 30px;
+    }
+
+    .thumb-meta span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .thumb button {
+      position: relative;
+      z-index: 3;
+      flex: 0 0 auto;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      background: #eadccc;
+      color: var(--ink);
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      background: var(--ink);
+      color: #fffaf0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 20;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1100px) {
+      .layout,
+      .preview-wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .tools-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .mosaic-stage,
+      .frames-panel {
+        height: auto;
+        min-height: 320px;
+      }
+
+      .status-strip {
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        width: min(100vw - 20px, 1540px);
+        padding-top: 12px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .status-strip,
+      .field-row,
+      .checks,
+      .actions,
+      .clip-actions,
+      .tools-row {
+        grid-template-columns: 1fr;
+      }
+
+      .thumbs {
+        grid-template-columns: 1fr;
+      }
+
+      .mosaic-stage,
+      .frames-panel {
+        min-height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="title-block">
+        <h1>视频截帧拼图工作台</h1>
+        <p>导入视频后按张数、秒数间隔或手动定位截帧，右侧自动生成宫格拼图和单图列表。</p>
+      </div>
+      <div class="status-strip" aria-live="polite">
+        <div class="status-item"><span>视频时长</span><strong id="durationText">--:--</strong></div>
+        <div class="status-item"><span>截帧数量</span><strong id="frameCountText">0</strong></div>
+        <div class="status-item"><span>拼图规格</span><strong id="gridStatusText">9 宫格</strong></div>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="rail">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>1. 导入视频</h2>
+            <span class="hint">文件只在本机读取</span>
+          </div>
+          <div class="panel-body">
+            <label class="dropzone" id="dropzone">
+              <input id="fileInput" type="file" accept="video/*">
+              <span class="drop-content">
+                <span class="drop-icon">+</span>
+                <strong>选择或拖入视频</strong>
+                <span id="fileName">支持浏览器可播放的视频格式，如 MP4、MOV、WEBM。</span>
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>2. 视频预览</h2>
+            <span class="hint" id="resolutionText">未载入</span>
+          </div>
+          <div class="panel-body">
+            <div class="video-shell">
+              <video id="video" controls playsinline muted></video>
+            </div>
+            <div class="scrub-row">
+              <input id="seekRange" type="range" min="0" max="0" step="0.01" value="0">
+              <span class="time-pill" id="currentTimeText">00:00.00</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>3. 选取片段</h2>
+            <span class="hint" id="clipStatusText">全片</span>
+          </div>
+          <div class="panel-body">
+            <div class="range-card">
+              <div class="range-summary">
+                <div>
+                  <strong id="clipRangeText">00:00.00 - 00:00.00</strong>
+                  <span id="clipDurationText">片段时长 00:00.00</span>
+                </div>
+                <label class="switch">
+                  <input id="clipEnabled" type="checkbox">
+                  <span class="switch-track" aria-hidden="true"></span>
+                  只截片段
+                </label>
+              </div>
+
+              <div class="clip-slider" aria-label="视频片段范围">
+                <div class="clip-track"><div class="clip-fill" id="clipFill"></div></div>
+                <input id="clipStartRange" type="range" min="0" max="0" step="0.01" value="0" aria-label="片段开始时间">
+                <input id="clipEndRange" type="range" min="0" max="0" step="0.01" value="0" aria-label="片段结束时间">
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="clipStart">开始秒数</label>
+                  <input class="input" id="clipStart" type="number" min="0" step="0.01" value="0">
+                </div>
+                <div class="field">
+                  <label for="clipEnd">结束秒数</label>
+                  <input class="input" id="clipEnd" type="number" min="0" step="0.01" value="0">
+                </div>
+              </div>
+
+              <div class="clip-actions">
+                <button class="mini-btn" id="setClipStartBtn" type="button" disabled>设为开始</button>
+                <button class="mini-btn" id="setClipEndBtn" type="button" disabled>设为结束</button>
+                <button class="mini-btn" id="resetClipBtn" type="button" disabled>恢复全片</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>4. 切图方式</h2>
+            <span class="hint" id="modeHint">按张数</span>
+          </div>
+          <div class="panel-body">
+            <div class="segmented" role="tablist" aria-label="切图方式">
+              <button class="segment active" data-mode="count" type="button">按张数</button>
+              <button class="segment" data-mode="interval" type="button">按秒数</button>
+              <button class="segment" data-mode="manual" type="button">手动切帧</button>
+            </div>
+
+            <div class="form-grid">
+              <div class="field mode-field" data-mode-field="count">
+                <label for="targetCount">截帧张数</label>
+                <input class="input" id="targetCount" type="number" min="1" max="999" value="9">
+              </div>
+
+              <div class="field mode-field hidden" data-mode-field="interval">
+                <label for="intervalSeconds">每隔几秒切 1 张</label>
+                <input class="input" id="intervalSeconds" type="number" min="0.1" max="3600" step="0.1" value="5">
+              </div>
+
+              <div class="field mode-field hidden" data-mode-field="manual">
+                <label for="manualSecond">手动截帧秒数</label>
+                <input class="input" id="manualSecond" type="number" min="0" step="0.01" value="0">
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="captureWidth">单图宽度</label>
+                  <select id="captureWidth">
+                    <option value="source">原视频宽度</option>
+                    <option value="1920">1920 px</option>
+                    <option value="1280">1280 px</option>
+                    <option value="960">960 px</option>
+                    <option value="640">640 px</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="imageFormat">图片格式</label>
+                  <select id="imageFormat">
+                    <option value="image/png">PNG</option>
+                    <option value="image/jpeg">JPG</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="checks">
+                <label class="check"><input id="skipEdges" type="checkbox" checked> 避开首尾黑场</label>
+                <label class="check"><input id="clearBefore" type="checkbox" checked> 截帧前清空旧图</label>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn primary" id="captureBtn" type="button" disabled>开始切图</button>
+              <button class="btn" id="manualCaptureBtn" type="button" disabled>截当前帧</button>
+              <button class="btn" id="clearBtn" type="button" disabled>清空图片</button>
+              <button class="btn dark" id="sortBtn" type="button" disabled>按时间排序</button>
+            </div>
+            <div class="progress-wrap" id="progressWrap"><div class="progress" id="progress"></div></div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>截帧工作台</h2>
+            <span class="hint" id="mosaicInfo">等待截帧</span>
+          </div>
+          <div class="panel-body">
+            <div class="tools-row">
+              <div class="field">
+                <label for="gridPreset">宫格数量</label>
+                <select id="gridPreset">
+                  <option value="4">4 宫格</option>
+                  <option value="6">6 宫格</option>
+                  <option value="9" selected>9 宫格</option>
+                  <option value="12">12 宫格</option>
+                  <option value="16">16 宫格</option>
+                  <option value="20">20 宫格</option>
+                  <option value="25">25 宫格</option>
+                  <option value="all">全部图片</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="gridColumns">每行列数</label>
+                <select id="gridColumns">
+                  <option value="auto" selected>自动</option>
+                  <option value="2">2 列</option>
+                  <option value="3">3 列</option>
+                  <option value="4">4 列</option>
+                  <option value="5">5 列</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="gapSize">图片间距</label>
+                <input class="input" id="gapSize" type="number" min="0" max="80" value="10">
+              </div>
+              <div class="field">
+                <label for="bgColor">拼图底色</label>
+                <input class="input" id="bgColor" type="color" value="#fffaf0">
+              </div>
+              <div class="field">
+                <label for="captionMode">时间标记</label>
+                <select id="captionMode">
+                  <option value="time" selected>显示秒数</option>
+                  <option value="index">显示序号</option>
+                  <option value="none">不显示</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions export-actions">
+              <button class="btn green" id="downloadMosaicBtn" type="button" disabled>导出拼图</button>
+              <button class="btn" id="downloadFramesBtn" type="button" disabled>导出单图</button>
+              <button class="btn" id="copyMosaicBtn" type="button" disabled>复制拼图</button>
+              <button class="btn" id="refreshMosaicBtn" type="button" disabled>刷新</button>
+            </div>
+
+            <div class="preview-wrap">
+              <div class="mosaic-stage">
+                <canvas id="mosaicCanvas" class="hidden"></canvas>
+                <div class="empty" id="emptyMosaic">导入视频并完成截帧后，这里会自动生成宫格图。</div>
+              </div>
+
+              <div class="frames-panel">
+                <div class="frames-toolbar">
+                  <strong>单图列表</strong>
+                  <div class="frames-actions">
+                    <button class="mini-btn" id="sortFramesBtn" type="button" disabled>时间排序</button>
+                    <button class="mini-btn" id="removeLastBtn" type="button" disabled title="删除最后一张">删末张</button>
+                  </div>
+                </div>
+                <div class="thumbs" id="thumbs">
+                  <div class="empty">还没有截帧图片。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <canvas id="captureCanvas" class="hidden"></canvas>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const el = {
+      fileInput: document.getElementById('fileInput'),
+      dropzone: document.getElementById('dropzone'),
+      fileName: document.getElementById('fileName'),
+      video: document.getElementById('video'),
+      seekRange: document.getElementById('seekRange'),
+      currentTimeText: document.getElementById('currentTimeText'),
+      durationText: document.getElementById('durationText'),
+      frameCountText: document.getElementById('frameCountText'),
+      gridStatusText: document.getElementById('gridStatusText'),
+      resolutionText: document.getElementById('resolutionText'),
+      clipStatusText: document.getElementById('clipStatusText'),
+      clipRangeText: document.getElementById('clipRangeText'),
+      clipDurationText: document.getElementById('clipDurationText'),
+      clipEnabled: document.getElementById('clipEnabled'),
+      clipStart: document.getElementById('clipStart'),
+      clipEnd: document.getElementById('clipEnd'),
+      clipStartRange: document.getElementById('clipStartRange'),
+      clipEndRange: document.getElementById('clipEndRange'),
+      clipFill: document.getElementById('clipFill'),
+      setClipStartBtn: document.getElementById('setClipStartBtn'),
+      setClipEndBtn: document.getElementById('setClipEndBtn'),
+      resetClipBtn: document.getElementById('resetClipBtn'),
+      modeHint: document.getElementById('modeHint'),
+      targetCount: document.getElementById('targetCount'),
+      intervalSeconds: document.getElementById('intervalSeconds'),
+      manualSecond: document.getElementById('manualSecond'),
+      captureWidth: document.getElementById('captureWidth'),
+      imageFormat: document.getElementById('imageFormat'),
+      skipEdges: document.getElementById('skipEdges'),
+      clearBefore: document.getElementById('clearBefore'),
+      captureBtn: document.getElementById('captureBtn'),
+      manualCaptureBtn: document.getElementById('manualCaptureBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      sortBtn: document.getElementById('sortBtn'),
+      sortFramesBtn: document.getElementById('sortFramesBtn'),
+      progressWrap: document.getElementById('progressWrap'),
+      progress: document.getElementById('progress'),
+      gridPreset: document.getElementById('gridPreset'),
+      gridColumns: document.getElementById('gridColumns'),
+      gapSize: document.getElementById('gapSize'),
+      bgColor: document.getElementById('bgColor'),
+      captionMode: document.getElementById('captionMode'),
+      downloadMosaicBtn: document.getElementById('downloadMosaicBtn'),
+      downloadFramesBtn: document.getElementById('downloadFramesBtn'),
+      copyMosaicBtn: document.getElementById('copyMosaicBtn'),
+      refreshMosaicBtn: document.getElementById('refreshMosaicBtn'),
+      removeLastBtn: document.getElementById('removeLastBtn'),
+      thumbs: document.getElementById('thumbs'),
+      mosaicCanvas: document.getElementById('mosaicCanvas'),
+      emptyMosaic: document.getElementById('emptyMosaic'),
+      captureCanvas: document.getElementById('captureCanvas'),
+      mosaicInfo: document.getElementById('mosaicInfo'),
+      toast: document.getElementById('toast')
+    };
+
+    let videoUrl = '';
+    let mode = 'count';
+    let frames = [];
+    let isCapturing = false;
+    let draggedFrameId = '';
+    let toastTimer = 0;
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      el.toast.textContent = message;
+      el.toast.classList.add('show');
+      toastTimer = setTimeout(() => el.toast.classList.remove('show'), 2200);
+    }
+
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds)) return '--:--';
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds - minutes * 60;
+      return `${String(minutes).padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
+    }
+
+    function sanitizeName(name) {
+      return (name || 'video').replace(/\.[^.]+$/, '').replace(/[^\w\u4e00-\u9fa5-]+/g, '_').slice(0, 60);
+    }
+
+    function enableVideoControls(enabled) {
+      el.captureBtn.disabled = !enabled || isCapturing;
+      el.manualCaptureBtn.disabled = !enabled || isCapturing;
+      el.seekRange.disabled = !enabled;
+      [
+        el.clipEnabled,
+        el.clipStart,
+        el.clipEnd,
+        el.clipStartRange,
+        el.clipEndRange,
+        el.setClipStartBtn,
+        el.setClipEndBtn,
+        el.resetClipBtn
+      ].forEach((control) => {
+        control.disabled = !enabled || isCapturing;
+      });
+    }
+
+    function updateFrameControls() {
+      const hasFrames = frames.length > 0;
+      el.clearBtn.disabled = !hasFrames || isCapturing;
+      el.sortBtn.disabled = !hasFrames || isCapturing;
+      el.sortFramesBtn.disabled = !hasFrames || isCapturing;
+      el.downloadMosaicBtn.disabled = !hasFrames || isCapturing;
+      el.downloadFramesBtn.disabled = !hasFrames || isCapturing;
+      el.copyMosaicBtn.disabled = !hasFrames || isCapturing || !navigator.clipboard || !window.ClipboardItem;
+      el.refreshMosaicBtn.disabled = !hasFrames || isCapturing;
+      el.removeLastBtn.disabled = !hasFrames || isCapturing;
+      el.frameCountText.textContent = String(frames.length);
+    }
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      document.querySelectorAll('.segment').forEach((button) => {
+        button.classList.toggle('active', button.dataset.mode === mode);
+      });
+      document.querySelectorAll('.mode-field').forEach((field) => {
+        field.classList.toggle('hidden', field.dataset.modeField !== mode);
+      });
+      el.modeHint.textContent = mode === 'count' ? '按张数' : mode === 'interval' ? '按秒数' : '手动切帧';
+      el.captureBtn.textContent = mode === 'manual' ? '截指定秒数' : '开始切图';
+    }
+
+    function getDuration() {
+      return Number.isFinite(el.video.duration) ? el.video.duration : 0;
+    }
+
+    function clampTime(value) {
+      const duration = getDuration();
+      return Math.max(0, Math.min(duration, Number(value) || 0));
+    }
+
+    function minClipSpan() {
+      const duration = getDuration();
+      if (duration <= 0) return 0;
+      return Math.min(0.1, duration);
+    }
+
+    function getClipBounds() {
+      const duration = getDuration();
+      let start = clampTime(el.clipStart.value);
+      let end = clampTime(el.clipEnd.value);
+      if (!el.clipEnabled.checked) return { start: 0, end: duration };
+      if (end < start) [start, end] = [end, start];
+      if (duration > 0 && end - start < minClipSpan()) {
+        end = Math.min(duration, start + minClipSpan());
+        start = Math.max(0, end - minClipSpan());
+      }
+      return { start, end };
+    }
+
+    function setClipValues(start, end, activate = true) {
+      const duration = getDuration();
+      let safeStart = Math.max(0, Math.min(duration, Number(start) || 0));
+      let safeEnd = Math.max(0, Math.min(duration, Number(end) || 0));
+      if (safeEnd < safeStart) [safeStart, safeEnd] = [safeEnd, safeStart];
+      if (duration > 0 && safeEnd - safeStart < minClipSpan()) {
+        if (safeStart + minClipSpan() <= duration) {
+          safeEnd = safeStart + minClipSpan();
+        } else {
+          safeStart = Math.max(0, safeEnd - minClipSpan());
+        }
+      }
+
+      el.clipEnabled.checked = activate && duration > 0 && (safeStart > 0 || safeEnd < duration);
+      el.clipStart.value = safeStart.toFixed(2);
+      el.clipEnd.value = safeEnd.toFixed(2);
+      el.clipStartRange.value = String(safeStart);
+      el.clipEndRange.value = String(safeEnd);
+      updateClipUI();
+    }
+
+    function updateClipUI() {
+      const duration = getDuration();
+      const start = clampTime(el.clipStart.value);
+      const end = clampTime(el.clipEnd.value);
+      const active = el.clipEnabled.checked && duration > 0;
+      const displayStart = active ? Math.min(start, end) : 0;
+      const displayEnd = active ? Math.max(start, end) : duration;
+      const left = duration > 0 ? (displayStart / duration) * 100 : 0;
+      const right = duration > 0 ? 100 - (displayEnd / duration) * 100 : 0;
+
+      el.clipFill.style.left = `${left}%`;
+      el.clipFill.style.right = `${right}%`;
+      el.clipFill.style.width = 'auto';
+      el.clipRangeText.textContent = `${formatTime(displayStart)} - ${formatTime(displayEnd)}`;
+      el.clipDurationText.textContent = `片段时长 ${formatTime(Math.max(0, displayEnd - displayStart))}`;
+      el.clipStatusText.textContent = active ? '截取片段' : '全片';
+    }
+
+    function waitForVideoEvent(eventName) {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          cleanup();
+          reject(new Error(`等待视频 ${eventName} 超时`));
+        }, 12000);
+        function done() {
+          cleanup();
+          resolve();
+        }
+        function fail() {
+          cleanup();
+          reject(new Error('视频读取失败'));
+        }
+        function cleanup() {
+          clearTimeout(timeout);
+          el.video.removeEventListener(eventName, done);
+          el.video.removeEventListener('error', fail);
+        }
+        el.video.addEventListener(eventName, done, { once: true });
+        el.video.addEventListener('error', fail, { once: true });
+      });
+    }
+
+    async function seekTo(seconds) {
+      const duration = el.video.duration || 0;
+      const safeTime = Math.max(0, Math.min(seconds, Math.max(0, duration - 0.04)));
+      if (Math.abs(el.video.currentTime - safeTime) < 0.015) return;
+      const promise = waitForVideoEvent('seeked');
+      el.video.currentTime = safeTime;
+      await promise;
+    }
+
+    function getCaptureSize() {
+      const sourceWidth = el.video.videoWidth || 1280;
+      const sourceHeight = el.video.videoHeight || 720;
+      const selected = el.captureWidth.value;
+      if (selected === 'source') {
+        return { width: sourceWidth, height: sourceHeight };
+      }
+      const width = Math.min(Number(selected), sourceWidth);
+      return { width, height: Math.round(width * sourceHeight / sourceWidth) };
+    }
+
+    function canvasToBlob(canvas, type) {
+      const quality = type === 'image/jpeg' ? 0.92 : undefined;
+      return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+    }
+
+    async function captureFrameAt(seconds) {
+      await seekTo(seconds);
+      const { width, height } = getCaptureSize();
+      const canvas = el.captureCanvas;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(el.video, 0, 0, width, height);
+      const type = el.imageFormat.value;
+      const blob = await canvasToBlob(canvas, type);
+      if (!blob) throw new Error('无法生成截帧图片');
+      const url = URL.createObjectURL(blob);
+      return {
+        id: window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`,
+        time: seconds,
+        width,
+        height,
+        type,
+        blob,
+        url
+      };
+    }
+
+    function computeTimes() {
+      const duration = getDuration();
+      const clip = getClipBounds();
+      const span = Math.max(0, clip.end - clip.start);
+      const edge = el.skipEdges.checked && span > 2 ? Math.min(1, span * 0.04) : 0;
+      const start = Math.min(clip.end, clip.start + edge);
+      const end = Math.max(start, clip.end - edge);
+
+      if (mode === 'manual') {
+        const requested = Number(el.manualSecond.value || el.video.currentTime || 0);
+        return [Math.max(clip.start, Math.min(clip.end, requested))];
+      }
+
+      if (mode === 'interval') {
+        const interval = Math.max(0.1, Number(el.intervalSeconds.value) || 1);
+        const list = [];
+        for (let t = start; t <= end + 0.001; t += interval) {
+          list.push(Math.min(t, end));
+          if (list.length > 1000) break;
+        }
+        if (!list.length) list.push(clip.start + span / 2);
+        return list;
+      }
+
+      const count = Math.max(1, Math.min(999, Number(el.targetCount.value) || 1));
+      if (count === 1) return [start + (end - start) / 2];
+      return Array.from({ length: count }, (_, index) => {
+        const ratio = index / (count - 1);
+        return start + (end - start) * ratio;
+      });
+    }
+
+    async function runCapture() {
+      if (isCapturing || !Number.isFinite(el.video.duration)) return;
+      const times = computeTimes();
+      if (el.clearBefore.checked && mode !== 'manual') clearFrames(false);
+      isCapturing = true;
+      enableVideoControls(true);
+      updateFrameControls();
+      el.progressWrap.classList.add('show');
+      el.progress.style.width = '0%';
+
+      try {
+        const previousPaused = el.video.paused;
+        el.video.pause();
+        for (let i = 0; i < times.length; i += 1) {
+          const frame = await captureFrameAt(times[i]);
+          frames.push(frame);
+          el.progress.style.width = `${Math.round(((i + 1) / times.length) * 100)}%`;
+          renderThumbs();
+          await renderMosaic();
+        }
+        if (!previousPaused) el.video.play().catch(() => {});
+        showToast(`已完成 ${times.length} 张截帧`);
+      } catch (error) {
+        console.error(error);
+        showToast(error.message || '截帧失败');
+      } finally {
+        isCapturing = false;
+        enableVideoControls(true);
+        updateFrameControls();
+        setTimeout(() => el.progressWrap.classList.remove('show'), 500);
+      }
+    }
+
+    function clearFrames(showMessage = true) {
+      frames.forEach((frame) => URL.revokeObjectURL(frame.url));
+      frames = [];
+      renderThumbs();
+      renderMosaic();
+      updateFrameControls();
+      if (showMessage) showToast('已清空所有截帧');
+    }
+
+    function sortFramesByTime() {
+      frames.sort((a, b) => a.time - b.time);
+      renderThumbs();
+      renderMosaic();
+      showToast('已按时间排序');
+    }
+
+    function reorderFrame(draggedId, targetId, placeAfter) {
+      if (!draggedId || !targetId || draggedId === targetId) return false;
+      const fromIndex = frames.findIndex((frame) => frame.id === draggedId);
+      const targetIndex = frames.findIndex((frame) => frame.id === targetId);
+      if (fromIndex < 0 || targetIndex < 0) return false;
+
+      const [moved] = frames.splice(fromIndex, 1);
+      const adjustedTargetIndex = frames.findIndex((frame) => frame.id === targetId);
+      frames.splice(adjustedTargetIndex + (placeAfter ? 1 : 0), 0, moved);
+      renderThumbs();
+      renderMosaic();
+      return true;
+    }
+
+    function renderThumbs() {
+      el.thumbs.innerHTML = '';
+      if (!frames.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = '还没有截帧图片。';
+        el.thumbs.appendChild(empty);
+        return;
+      }
+
+      frames.forEach((frame, index) => {
+        const item = document.createElement('article');
+        item.className = 'thumb';
+        item.draggable = !isCapturing;
+        item.dataset.frameId = frame.id;
+        item.title = '拖拽可调整拼图顺序';
+        const img = document.createElement('img');
+        img.src = frame.url;
+        img.alt = `第 ${index + 1} 张截帧`;
+        const meta = document.createElement('div');
+        meta.className = 'thumb-meta';
+        const label = document.createElement('span');
+        label.textContent = `#${String(index + 1).padStart(2, '0')} ${formatTime(frame.time)}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = 'x';
+        remove.title = '删除这张';
+        remove.draggable = false;
+        remove.addEventListener('dragstart', (event) => event.preventDefault());
+        remove.addEventListener('pointerdown', (event) => event.stopPropagation());
+        remove.addEventListener('click', (event) => {
+          event.stopPropagation();
+          URL.revokeObjectURL(frame.url);
+          frames = frames.filter((itemFrame) => itemFrame.id !== frame.id);
+          renderThumbs();
+          renderMosaic();
+          updateFrameControls();
+        });
+        item.addEventListener('dragstart', (event) => {
+          if (isCapturing) {
+            event.preventDefault();
+            return;
+          }
+          draggedFrameId = frame.id;
+          item.classList.add('dragging');
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', frame.id);
+        });
+        item.addEventListener('dragover', (event) => {
+          event.preventDefault();
+          if (draggedFrameId && draggedFrameId !== frame.id) {
+            item.classList.add('drag-over');
+            event.dataTransfer.dropEffect = 'move';
+          }
+        });
+        item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+        item.addEventListener('drop', (event) => {
+          event.preventDefault();
+          item.classList.remove('drag-over');
+          const rect = item.getBoundingClientRect();
+          const placeAfter = event.clientY > rect.top + rect.height / 2;
+          const didMove = reorderFrame(draggedFrameId || event.dataTransfer.getData('text/plain'), frame.id, placeAfter);
+          if (didMove) showToast('已更新图片顺序');
+          draggedFrameId = '';
+        });
+        item.addEventListener('dragend', () => {
+          draggedFrameId = '';
+          item.classList.remove('dragging', 'drag-over');
+          document.querySelectorAll('.thumb.drag-over').forEach((thumb) => thumb.classList.remove('drag-over'));
+        });
+        meta.append(label, remove);
+        item.append(img, meta);
+        el.thumbs.appendChild(item);
+      });
+    }
+
+    function getMosaicFrames() {
+      if (el.gridPreset.value === 'all') return frames;
+      return frames.slice(0, Number(el.gridPreset.value));
+    }
+
+    function autoColumns(count) {
+      if (count <= 4) return 2;
+      if (count <= 9) return 3;
+      if (count <= 16) return 4;
+      return 5;
+    }
+
+    async function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    async function renderMosaic() {
+      updateFrameControls();
+      const chosen = getMosaicFrames();
+      const canvas = el.mosaicCanvas;
+      const ctx = canvas.getContext('2d');
+      if (!chosen.length) {
+        canvas.classList.add('hidden');
+        el.emptyMosaic.classList.remove('hidden');
+        el.mosaicInfo.textContent = '等待截帧';
+        return;
+      }
+
+      const columns = el.gridColumns.value === 'auto' ? autoColumns(chosen.length) : Number(el.gridColumns.value);
+      const rows = Math.ceil(chosen.length / columns);
+      const gap = Math.max(0, Number(el.gapSize.value) || 0);
+      const first = chosen[0];
+      const cellW = Math.min(540, first.width);
+      const cellH = Math.round(cellW * first.height / first.width);
+      const captionH = el.captionMode.value === 'none' ? 0 : 30;
+      const pad = gap;
+      canvas.width = columns * cellW + (columns + 1) * gap;
+      canvas.height = rows * (cellH + captionH) + (rows + 1) * gap;
+
+      ctx.fillStyle = el.bgColor.value;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.font = '700 18px ui-monospace, Menlo, monospace';
+      ctx.textBaseline = 'middle';
+
+      for (let i = 0; i < chosen.length; i += 1) {
+        const image = await loadImage(chosen[i].url);
+        const col = i % columns;
+        const row = Math.floor(i / columns);
+        const x = pad + col * (cellW + gap);
+        const y = pad + row * (cellH + captionH + gap);
+        ctx.drawImage(image, x, y, cellW, cellH);
+        if (captionH) {
+          ctx.fillStyle = 'rgba(31, 29, 25, 0.88)';
+          ctx.fillRect(x, y + cellH, cellW, captionH);
+          ctx.fillStyle = '#fffaf0';
+          const text = el.captionMode.value === 'index' ? `#${String(i + 1).padStart(2, '0')}` : formatTime(chosen[i].time);
+          ctx.fillText(text, x + 10, y + cellH + captionH / 2);
+        }
+      }
+
+      canvas.classList.remove('hidden');
+      el.emptyMosaic.classList.add('hidden');
+      el.mosaicInfo.textContent = `${chosen.length} 张，${columns} x ${rows}，${canvas.width} x ${canvas.height}px`;
+      el.gridStatusText.textContent = el.gridPreset.value === 'all' ? '全部图片' : `${el.gridPreset.value} 宫格`;
+    }
+
+    function downloadBlob(blob, filename) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+
+    async function downloadMosaic() {
+      if (!frames.length) return;
+      await renderMosaic();
+      const type = el.imageFormat.value;
+      const blob = await canvasToBlob(el.mosaicCanvas, type);
+      const ext = type === 'image/jpeg' ? 'jpg' : 'png';
+      downloadBlob(blob, `${sanitizeName(el.fileInput.files[0]?.name)}_mosaic.${ext}`);
+      showToast('已导出宫格图');
+    }
+
+    function downloadFrames() {
+      if (!frames.length) return;
+      const ext = el.imageFormat.value === 'image/jpeg' ? 'jpg' : 'png';
+      const base = sanitizeName(el.fileInput.files[0]?.name);
+      frames.forEach((frame, index) => {
+        setTimeout(() => {
+          downloadBlob(frame.blob, `${base}_frame_${String(index + 1).padStart(3, '0')}_${frame.time.toFixed(2)}s.${ext}`);
+        }, index * 120);
+      });
+      showToast(`开始导出 ${frames.length} 张单图`);
+    }
+
+    async function copyMosaic() {
+      if (!frames.length || !navigator.clipboard || !window.ClipboardItem) return;
+      await renderMosaic();
+      const blob = await canvasToBlob(el.mosaicCanvas, 'image/png');
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      showToast('宫格图已复制到剪贴板');
+    }
+
+    function handleVideoFile(file) {
+      if (!file) return;
+      if (!file.type.startsWith('video/')) {
+        showToast('请选择视频文件');
+        return;
+      }
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      clearFrames(false);
+      videoUrl = URL.createObjectURL(file);
+      el.video.src = videoUrl;
+      el.fileName.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+      el.video.load();
+    }
+
+    el.fileInput.addEventListener('change', () => handleVideoFile(el.fileInput.files[0]));
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      el.dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        el.dropzone.classList.add('is-dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      el.dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        el.dropzone.classList.remove('is-dragover');
+      });
+    });
+
+    el.dropzone.addEventListener('drop', (event) => handleVideoFile(event.dataTransfer.files[0]));
+
+    el.video.addEventListener('loadedmetadata', () => {
+      const duration = el.video.duration || 0;
+      el.durationText.textContent = formatTime(duration);
+      el.seekRange.max = String(duration);
+      el.seekRange.value = '0';
+      el.manualSecond.max = String(duration);
+      [el.clipStart, el.clipEnd, el.clipStartRange, el.clipEndRange].forEach((control) => {
+        control.max = String(duration);
+      });
+      setClipValues(0, duration, false);
+      el.resolutionText.textContent = `${el.video.videoWidth} x ${el.video.videoHeight}`;
+      enableVideoControls(true);
+      updateFrameControls();
+      showToast('视频已载入');
+    });
+
+    el.video.addEventListener('timeupdate', () => {
+      el.seekRange.value = String(el.video.currentTime);
+      el.currentTimeText.textContent = formatTime(el.video.currentTime);
+      if (mode === 'manual') el.manualSecond.value = el.video.currentTime.toFixed(2);
+    });
+
+    el.seekRange.addEventListener('input', () => {
+      const nextTime = Number(el.seekRange.value);
+      el.video.currentTime = nextTime;
+      el.currentTimeText.textContent = formatTime(nextTime);
+      el.manualSecond.value = nextTime.toFixed(2);
+    });
+
+    el.manualSecond.addEventListener('change', () => {
+      const duration = el.video.duration || 0;
+      const nextTime = Math.max(0, Math.min(duration, Number(el.manualSecond.value) || 0));
+      el.manualSecond.value = nextTime.toFixed(2);
+      el.video.currentTime = nextTime;
+    });
+
+    el.clipEnabled.addEventListener('change', () => {
+      if (el.clipEnabled.checked && getDuration() > 0) {
+        const start = clampTime(el.clipStart.value);
+        const end = clampTime(el.clipEnd.value);
+        if (start <= 0.01 && Math.abs(end - getDuration()) <= 0.05) {
+          const duration = getDuration();
+          setClipValues(duration * 0.15, duration * 0.85, true);
+          return;
+        }
+      }
+      updateClipUI();
+    });
+
+    el.clipStartRange.addEventListener('input', () => {
+      setClipValues(el.clipStartRange.value, el.clipEnd.value, true);
+    });
+
+    el.clipEndRange.addEventListener('input', () => {
+      setClipValues(el.clipStart.value, el.clipEndRange.value, true);
+    });
+
+    el.clipStart.addEventListener('change', () => {
+      setClipValues(el.clipStart.value, el.clipEnd.value, true);
+    });
+
+    el.clipEnd.addEventListener('change', () => {
+      setClipValues(el.clipStart.value, el.clipEnd.value, true);
+    });
+
+    el.setClipStartBtn.addEventListener('click', () => {
+      const start = clampTime(el.video.currentTime);
+      const end = Math.max(start + minClipSpan(), clampTime(el.clipEnd.value));
+      setClipValues(start, end, true);
+      showToast('已设置片段开始点');
+    });
+
+    el.setClipEndBtn.addEventListener('click', () => {
+      const end = clampTime(el.video.currentTime);
+      const start = Math.min(clampTime(el.clipStart.value), Math.max(0, end - minClipSpan()));
+      setClipValues(start, end, true);
+      showToast('已设置片段结束点');
+    });
+
+    el.resetClipBtn.addEventListener('click', () => {
+      setClipValues(0, getDuration(), false);
+      showToast('已恢复为全片截帧');
+    });
+
+    document.querySelectorAll('.segment').forEach((button) => {
+      button.addEventListener('click', () => setMode(button.dataset.mode));
+    });
+
+    el.captureBtn.addEventListener('click', runCapture);
+    el.manualCaptureBtn.addEventListener('click', async () => {
+      const currentMode = mode;
+      el.manualSecond.value = el.video.currentTime.toFixed(2);
+      mode = 'manual';
+      await runCapture();
+      mode = currentMode;
+    });
+    el.clearBtn.addEventListener('click', () => clearFrames(true));
+    el.sortBtn.addEventListener('click', sortFramesByTime);
+    el.sortFramesBtn.addEventListener('click', sortFramesByTime);
+    el.removeLastBtn.addEventListener('click', () => {
+      const frame = frames.pop();
+      if (frame) URL.revokeObjectURL(frame.url);
+      renderThumbs();
+      renderMosaic();
+      updateFrameControls();
+    });
+
+    [el.gridPreset, el.gridColumns, el.gapSize, el.bgColor, el.captionMode].forEach((control) => {
+      control.addEventListener('input', renderMosaic);
+      control.addEventListener('change', renderMosaic);
+    });
+
+    el.downloadMosaicBtn.addEventListener('click', downloadMosaic);
+    el.downloadFramesBtn.addEventListener('click', downloadFrames);
+    el.copyMosaicBtn.addEventListener('click', () => copyMosaic().catch(() => showToast('复制失败，浏览器可能不支持')));
+    el.refreshMosaicBtn.addEventListener('click', renderMosaic);
+
+    window.addEventListener('beforeunload', () => {
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      frames.forEach((frame) => URL.revokeObjectURL(frame.url));
+    });
+
+    enableVideoControls(false);
+    updateFrameControls();
+    setMode('count');
+  </script>
+</body>
+</html>
